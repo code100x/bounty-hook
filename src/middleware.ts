@@ -1,5 +1,6 @@
 import { createFactory } from 'hono/factory';
 import { extractAmount, hexToBytes, isBountyComment } from './utils';
+import { addBountyToNotion } from './notion';
 
 const encoder = new TextEncoder();
 
@@ -29,37 +30,53 @@ export const checkGhSignature = factory.createMiddleware(async (c, next) => {
       dataBytes
     );
 
-    if (!equal) return c.set('error', 'unauthorized');
+    if (!equal) c.set('error', 'unauthorized');
 
     return await next();
   } catch (e) {
     console.log(e);
     c.set('error', 'unauthorized');
+    return await next();
   }
 });
 
 export const webhookHandler = factory.createHandlers(
   checkGhSignature,
   async (c) => {
-    const adminUsernames: string[] = c.env.ADMIN_USERNAMES.split(',');
-    if (c.var.error) return c.status(401);
+    try {
+      const adminUsernames: string[] = c.env.ADMIN_USERNAMES.split(',');
+      const notionDatabaseId = c.env.NOTION_DATABASE_ID;
+      const notionApiKey = c.env.NOTION_API_KEY;
+      if (c.var.error) return c.status(401);
 
-    const body = await c.req.json();
-    const username = body.sender.login;
-    const message = body.comment.body;
-    const author = body.issue.user.login;
+      const body = await c.req.json();
+      const username = body.sender.login;
+      const message = body.comment.body;
+      const author = body.issue.user.login;
 
-    if (
-      !isBountyComment(message) ||
-      adminUsernames.find((adminUsername) => adminUsername === username)
-    ) {
-      return c.status(200);
+      if (
+        !isBountyComment(message) ||
+        !adminUsernames.find((adminUsername) => adminUsername === username)
+      ) {
+        return c.status(200);
+      }
+
+      const bountyAmount = extractAmount(message);
+      if (!bountyAmount) return c.status(200);
+
+      await addBountyToNotion({
+        username: author,
+        amount: bountyAmount,
+        notion: {
+          apiKey: notionApiKey,
+          databaseId: notionDatabaseId,
+        },
+      });
+
+      return c.json({ message: 'Webhook received' });
+    } catch (e) {
+      console.log(e);
+      return c.status(500);
     }
-
-    // TODO Add the bounty to google sheet
-    const bountyAmount = extractAmount(message);
-    console.log(username, bountyAmount, author);
-
-    return c.json({ message: 'Webhook received' });
   }
 );

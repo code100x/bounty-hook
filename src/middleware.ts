@@ -58,7 +58,8 @@ export const webhookHandler = factory.createHandlers(
         !isBountyComment(message) ||
         !adminUsernames.find((adminUsername) => adminUsername === username)
       ) {
-        return c.status(200);
+        c.status(200);
+        return c.json({ message: 'Not a bounty comment' });
       }
 
       const bountyAmount = extractAmount(message);
@@ -76,7 +77,9 @@ export const webhookHandler = factory.createHandlers(
       return c.json({ message: 'Webhook received' });
     } catch (e) {
       console.log(e);
-      return c.status(500);
+      c.status(200);
+      return c.json({ message: 'Unauthorized' });
     }
   }
 );
+

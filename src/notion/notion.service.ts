@@ -3,6 +3,8 @@ import { Client } from '@notionhq/client';
 type CreatePageArgs = {
   username: string;
   amount: string;
+  pr: string;
+  date: string;
   notion: {
     apiKey: string;
     databaseId: string;
@@ -11,6 +13,8 @@ type CreatePageArgs = {
 export async function addBountyToNotion({
   username,
   amount,
+  pr,
+  date,
   notion: { apiKey, databaseId },
 }: CreatePageArgs) {
   const notion = new Client({
@@ -34,6 +38,18 @@ export async function addBountyToNotion({
           {
             text: {
               content: amount,
+            },
+          },
+        ],
+      },
+      PR: {
+        url: pr
+      },
+      Date: {
+        rich_text: [
+          {
+            text: {
+              content: date,
             },
           },
         ],

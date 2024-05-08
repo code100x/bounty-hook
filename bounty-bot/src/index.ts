@@ -3,12 +3,15 @@ import { extractAmount, isBountyComment, sendBountyMessageToDiscord } from "./ut
 import dotenv from 'dotenv'
 
 export default (app: Probot) => {
+
+  // removed await because that was a typo
+
   dotenv.config()
   app.on("issues.opened", async (context) => {
     const issueComment = context.issue({
       body: "Thanks for opening this issue!",
     });
-    await context.octokit.issues.createComment(issueComment);
+     context.octokit.issues.createComment(issueComment);
   });
  
     app.on("issue_comment",async(context)=>{
@@ -42,14 +45,14 @@ export default (app: Probot) => {
           const issueComment = context.issue({
           body: `Please send a valid bounty amount @${context.payload.sender.login}. Example command to send bounty: "/bounty $300", this will send $300 to contributor. `,
         });
-        await context.octokit.issues.createComment(issueComment);
+         context.octokit.issues.createComment(issueComment);
         return;
       }
         
         const prComment = context.issue({
           body: `Congratulations!!! @${context.payload.issue.user.login} for winning $${amount}. Visit ${process.env.CONTRIBUTOR_SERVER_URL} to claim bounty.`
         })
-        await context.octokit.issues.createComment(prComment)
+         context.octokit.issues.createComment(prComment)
         await sendBountyMessageToDiscord({
           title: 'Bounty Dispatch',
           avatarUrl: context.payload.sender.avatar_url,
@@ -63,7 +66,7 @@ export default (app: Probot) => {
 
     app.on("pull_request.opened",async(context)=>{
       const prComment = context.issue({body:"thanks for reviewing this PR"})
-      return  await context.octokit.issues.createComment(prComment)
+      return   context.octokit.issues.createComment(prComment)
     })
    
 

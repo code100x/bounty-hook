@@ -1,10 +1,31 @@
 import { createFactory } from 'hono/factory';
-import { extractAmount, hexToBytes, isBountyComment } from './utils';
+import {
+  extractAmount,
+  generateRandomString,
+  hexToBytes,
+  isBountyComment,
+} from './utils';
 import { addBountyToNotion } from './notion';
+import {
+  generateOAuth2AuthLink,
+  loginWithOauth2,
+  refreshOAuth2Token,
+  tweet,
+} from './twitter';
 
 const encoder = new TextEncoder();
 
 const factory = createFactory();
+
+export const healthCheckHandler = factory.createHandlers(async (c) => {
+  console.log(c.env.GITHUB_WEBHOOK_SECRET);
+  const accessToken = await c.env.access_token.get('access_token');
+  const refreshToken = await c.env.refresh_token.get('refresh_token');
+  const state = await c.env.state.get('state');
+  const codeVerifier = await c.env.codeVerifier.get('codeVerifier');
+  console.log({ accessToken, refreshToken, state, codeVerifier });
+  return c.text('Hello Hono!');
+});
 
 // Check if the request is coming from GitHub webhook
 export const checkGhSignature = factory.createMiddleware(async (c, next) => {
@@ -74,6 +95,29 @@ export const webhookHandler = factory.createHandlers(
         },
       });
 
+      const refreshToken = await c.env.refresh_token.get('refresh_token');
+
+      const tweetPayload = `Contrulations to the user ${author} for winning a bounty of ${bountyAmount}! 🎉🎉🎉 #bounty #winner`;
+
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+        await refreshOAuth2Token({
+          refreshToken: refreshToken,
+          clientId: c.env.TWITTER_CLIENT_API_KEY,
+        });
+
+      await c.env.access_token.put('access_token', newAccessToken);
+      await c.env.refresh_token.put('refresh_token', newRefreshToken);
+
+      // Tweeting
+      const response = await tweet({
+        tweet: tweetPayload,
+        accessToken: newAccessToken,
+      });
+
+      if (!response.data) {
+        return c.json({ message: 'Error in tweeting but saved in notion.' });
+      }
+
       return c.json({ message: 'Webhook received' });
     } catch (e) {
       console.log(e);
@@ -83,3 +127,58 @@ export const webhookHandler = factory.createHandlers(
   }
 );
 
+/**
+ * Creating a oauth2 url and redirecting the user to the Twitter for authentication
+ */
+export const settingUpTwitter = factory.createHandlers(async (c) => {
+  const state = generateRandomString(32);
+  const codeVerifier = 'codeVerifier';
+
+  const { url } = await generateOAuth2AuthLink({
+    callbackUrl: c.env.TWITTER_CALLBACK_URL,
+    state: state,
+    codeChallenge: codeVerifier,
+    code_challenge_method: 'plain',
+    scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+    clientId: c.env.TWITTER_CLIENT_API_KEY,
+  });
+
+  await c.env.codeVerifier.put('codeVerifier', codeVerifier);
+  await c.env.state.put('state', state);
+
+  return c.redirect(url);
+});
+
+/**
+ * Handling the callback from the Twitter after the user has authenticated
+ * @param code The code returned from the OAuth2 authorization.
+ * @param state The state returned from the OAuth2 authorization.
+ */
+export const twitterOauth2CallbackHandler = factory.createHandlers(
+  async (c) => {
+    const { code, state } = c.req.query();
+
+    const storedState = await c.env.state.get('state');
+    // if the state is not the same as the stored state then return unauthorized
+    if (state !== storedState) {
+      return c.status(401);
+    }
+
+    const storedCodeVerifier = await c.env.codeVerifier.get('codeVerifier');
+
+    const { accessToken, refreshToken } = await loginWithOauth2({
+      code: code,
+      codeVerifier: storedCodeVerifier,
+      redirectUri: c.env.TWITTER_CALLBACK_URL,
+      clientId: c.env.TWITTER_CLIENT_API_KEY,
+      clientSecret: c.env.TWITTER_CLIENT_SECRET,
+    });
+
+    if (!accessToken || !refreshToken) return c.status(401);
+
+    await c.env.access_token.put('access_token', accessToken);
+    await c.env.refresh_token.put('refresh_token', refreshToken);
+
+    return c.json({ message: 'Twitter Setup is complete.' });
+  }
+);

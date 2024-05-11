@@ -53,6 +53,8 @@ export const webhookHandler = factory.createHandlers(
       const username = body.sender.login;
       const message = body.comment.body;
       const author = body.issue.user.login;
+      const pr_link = body.issue.html_url;
+      const createdAt = body.comment.created_at.split("T")[0]
 
       if (
         !isBountyComment(message) ||
@@ -68,6 +70,8 @@ export const webhookHandler = factory.createHandlers(
       await addBountyToNotion({
         username: author,
         amount: bountyAmount,
+        pr: pr_link,
+        date: createdAt,
         notion: {
           apiKey: notionApiKey,
           databaseId: notionDatabaseId,

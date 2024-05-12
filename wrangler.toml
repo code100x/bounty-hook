@@ -2,11 +2,33 @@ name = "hono-bounty-tracker"
 compatibility_date = "2023-12-01"
 
 [vars]
-NAME = "Sargam"
+NAME = "Bounty Hook"
 
+# Uncomment this vars before DEPLOYMENT and assign the proper values
+# GITHUB_WEBHOOK_SECRET="
+# ADMIN_USERNAMES=""
+# NOTION_API_KEY=""
+# NOTION_DATABASE_ID=""
+# TWITTER_CLIENT_API_KEY=""
+# TWITTER_CLIENT_API_SECRET=""
+# TWITTER_CALLBACK_URL=""
+
+# this kv_namespaces are for development
 # [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# binding = "access_token"
+# id = "access Token"
+# 
+# [[kv_namespaces]]
+# binding = "refresh_token"
+# id = "refresh token"
+# 
+# [[kv_namespaces]]
+# binding = "state"
+# id = "state comes here"
+# 
+# [[kv_namespaces]]
+# binding = "codeVerifier"
+# id = "code verifier comes here"
 
 # [[r2_buckets]]
 # binding = "MY_BUCKET"

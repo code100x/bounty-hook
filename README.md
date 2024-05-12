@@ -1,5 +1,5 @@
 # Bounty Hook
-A simple webhook handler from github. Whenever the admins in the env file wite `/bounty $xx` in any PR comment then this accepts the webhook from the github and add bounty ammount, user who created PR and more details in a notion database and makes a tweet from the authorized twitter account about which user has won the bounty.  
+A simple webhook handler from github. Whenever the admins in the env file wite `/bounty $xx` in any PR comment then this accepts the webhook from the github and add bounty amount, user who created PR and more details in a notion database and makes a tweet from the authorized twitter account about which user has won the bounty.  
 ## Steps to run locally
 
 - git clone

@@ -12,6 +12,7 @@ import {
   refreshOAuth2Token,
   tweet,
 } from './twitter';
+import addBountyToDiscord from './discord/discord.service';
 
 const encoder = new TextEncoder();
 
@@ -68,6 +69,8 @@ export const webhookHandler = factory.createHandlers(
       const adminUsernames: string[] = c.env.ADMIN_USERNAMES.split(',');
       const notionDatabaseId = c.env.NOTION_DATABASE_ID;
       const notionApiKey = c.env.NOTION_API_KEY;
+      const discordWH = c.env.DISCORD_WEBHOOK_URL;
+
       if (c.var.error) return c.status(401);
 
       const body = await c.req.json();
@@ -76,6 +79,7 @@ export const webhookHandler = factory.createHandlers(
       const author = body.issue.user.login;
       const pr_link = body.issue.html_url;
       const createdAt = body.comment.created_at.split("T")[0]
+      const userAvatar = body.sender.avatar_url;
 
       if (
         !isBountyComment(message) ||
@@ -98,6 +102,19 @@ export const webhookHandler = factory.createHandlers(
           databaseId: notionDatabaseId,
         },
       });
+
+      const discordResponse = await addBountyToDiscord({
+        username: author,
+        amount: bountyAmount,
+        pr: pr_link,
+        date: createdAt,
+        discordWh: discordWH,
+        avatar: userAvatar
+      });
+
+      if (!discordResponse.ok) {
+        return c.json({ message: "Error while sending notification to discord" })
+      }
 
       const refreshToken = await c.env.refresh_token.get('refresh_token');
 

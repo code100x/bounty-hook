@@ -74,13 +74,12 @@ export const webhookHandler = factory.createHandlers(
       if (c.var.error) return c.status(401);
 
       const body = await c.req.json();
-      console.log(body)
       const username = body.sender.login;
       const message = body.comment.body;
       const author = body.issue.user.login;
       const pr_link = body.issue.html_url;
       const createdAt = body.comment.created_at.split("T")[0]
-      const userAvatar = body.sender.avatar_url; 
+      const userAvatar = body.sender.avatar_url;
 
       if (
         !isBountyComment(message) ||
@@ -104,14 +103,18 @@ export const webhookHandler = factory.createHandlers(
         },
       });
 
-      await addBountyToDiscord({
+      const discordResponse = await addBountyToDiscord({
         username: author,
         amount: bountyAmount,
         pr: pr_link,
         date: createdAt,
-        discordWh : discordWH,
-        avatar : userAvatar
+        discordWh: discordWH,
+        avatar: userAvatar
       });
+
+      if (!discordResponse.ok) {
+        return c.json({ message: "Error while sending notification to discord" })
+      }
 
       const refreshToken = await c.env.refresh_token.get('refresh_token');
 

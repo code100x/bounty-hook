@@ -40,11 +40,9 @@ export default async function addBountyToDiscord({
             },
             body: JSON.stringify(body)
         });
-
-        // const respData = await res.json();
-        console.log(res);
-        // console.log(respData);
+        const response = await (res.json()) as any;
+        return response;
     } catch (error) {
-        console.log(error);
+        return error;
     }
 };

@@ -21,6 +21,12 @@ bun run dev
 ![image](https://github.com/code100x/bounty-hook/assets/76874341/22cfc584-d832-4779-b98b-40a6f6239755)
 ![image](https://github.com/code100x/bounty-hook/assets/76874341/3cf824e5-61bd-459c-bdca-d95a69f767e2)
 
+## Discord Webhook Configuration
+
+![image](https://github.com/code100x/bounty-hook/assets/118182376/6653f928-95e0-4f55-8da8-b15837c9e66f)
+![image](https://github.com/code100x/bounty-hook/assets/118182376/e504b067-ba88-4a91-8947-7433d5a75419)
+![image](https://github.com/code100x/bounty-hook/assets/118182376/19c1db48-cefc-46d7-964c-ca5e39c94d80)
+
 ## Twitter configuration
 
 ![image](https://github.com/shrutsureja/bounty-hook/assets/92169549/e13e8665-907e-47f4-afa3-0ee98c75bbad)

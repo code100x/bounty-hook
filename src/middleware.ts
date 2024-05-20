@@ -1,4 +1,5 @@
 import { createFactory } from 'hono/factory';
+import myCrypto from 'crypto-js';
 import {
   extractAmount,
   generateRandomString,
@@ -75,10 +76,14 @@ export const webhookHandler = factory.createHandlers(
       const message = body.comment.body;
       const author = body.issue.user.login;
       const pr_link = body.issue.html_url;
-      const createdAt = body.comment.created_at.split("T")[0]
+      const createdAt = body.comment.created_at.split('T')[0];
+      const repo_owner: string = body.repository.owner.login;
+      const PR_Title: string = body.issue.title;
 
       if (
         !isBountyComment(message) ||
+        body.action !== 'created' ||
+        !body.issue.pull_request ||
         !adminUsernames.find((adminUsername) => adminUsername === username)
       ) {
         c.status(200);
@@ -87,6 +92,32 @@ export const webhookHandler = factory.createHandlers(
 
       const bountyAmount = extractAmount(message);
       if (!bountyAmount) return c.status(200);
+
+      const data = {
+        bountyAmount,
+        author,
+        pr_link,
+        repo_owner,
+        username,
+        PR_Title,
+      };
+
+      const SECRET_KEY = c.env.HASHING_SECRET_KEY;
+      const payload = JSON.stringify(data);
+      const SALT = 'mySalt';
+      const hash = myCrypto.HmacSHA256(SALT + payload, SECRET_KEY).toString();
+
+      const res = await fetch('http://localhost:3000/api/github-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Hash': hash },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        return c.json({
+          message: 'Error while sending data to 100xdevs.',
+        });
+      }
 
       await addBountyToNotion({
         username: author,

@@ -1,4 +1,5 @@
 import { createFactory } from 'hono/factory';
+import myCrypto from 'crypto-js';
 import {
   extractAmount,
   generateRandomString,
@@ -100,9 +101,15 @@ export const webhookHandler = factory.createHandlers(
         username,
         PR_Title,
       };
+
+      const SECRET_KEY = c.env.HASHING_SECRET_KEY;
+      const payload = JSON.stringify(data);
+      const SALT = 'mySalt';
+      const hash = myCrypto.HmacSHA256(SALT + payload, SECRET_KEY).toString();
+
       const res = await fetch('http://localhost:3000/api/github-webhook', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Hash': hash },
         body: JSON.stringify(data),
       });
 

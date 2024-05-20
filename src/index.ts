@@ -9,6 +9,7 @@ import {
 type Bindings = {
   GITHUB_WEBHOOK_SECRET: string;
   ADMIN_USERNAMES: string;
+  HASHING_SECRET_KEY: string;
   access_token: string;
   refresh_token: string;
   state: string;
